@@ -17,6 +17,12 @@ class Route
   # use pattern to pull out route params (save for later?)
   # instantiate controller and call controller action
   def run(req, res)
+    data = @pattern.match(req.path)
+    #from http://stackoverflow.com/questions/11688726/convert-named-matches-in-matchdata-to-hash
+    route_params = Hash[data.names.zip(data.captures)]
+    instantiated_controller = @controller_class.new(req, res, route_params)
+    instantiated_controller.invoke_action(@action_name)
+
   end
 end
 
@@ -47,9 +53,16 @@ class Router
 
   # should return the route that matches this request
   def match(req)
+    @routes.find { |route| route.matches?(req) }
   end
 
   # either throw 404 or call run on a matched route
   def run(req, res)
+    matched_route = match(req)
+    if matched_route
+      matched_route.run(req, res)
+    else
+      res.status = 404
+    end
   end
 end
